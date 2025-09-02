@@ -1,0 +1,25 @@
+{
+  "name": "interactive-table-mvp",
+  "version": "1.0.0",
+  "description": "MVP de aplicaciones React con componente de tabla compartido",
+  "scripts": {
+    "start": "./start.sh",
+    "dev:app-x": "cd app-x && npm run dev",
+    "dev:app-y": "cd app-y && npm run dev",
+    "build:app-x": "cd app-x && npm run build",
+    "build:app-y": "cd app-y && npm run build",
+    "install:all": "cd app-x && npm install && cd ../app-y && npm install",
+    "clean": "cd app-x && rm -rf node_modules dist && cd ../app-y && rm -rf node_modules dist"
+  },
+  "keywords": [
+    "react",
+    "typescript",
+    "shadcn-ui",
+    "tailwind",
+    "table",
+    "mvp",
+    "components"
+  ],
+  "author": "Tu Nombre",
+  "license": "MIT"
+}
