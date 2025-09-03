@@ -19,6 +19,40 @@
       "categories": ["tables", "forms"]
     },
     {
+      "name": "table-store",
+      "type": "registry:hook",
+      "title": "Table Store (Zustand)",
+      "description": "Zustand store for managing table state, data, and operations.",
+      "dependencies": ["zustand"],
+      "registryDependencies": [],
+      "files": [
+        {
+          "path": "stores/table-store.ts",
+          "type": "registry:hook"
+        }
+      ],
+      "categories": ["state", "stores"]
+    },
+    {
+      "name": "api-client",
+      "type": "registry:hook",
+      "title": "API Client (TanStack Query)",
+      "description": "TanStack Query hooks and utilities for API data fetching and caching.",
+      "dependencies": ["@tanstack/react-query"],
+      "registryDependencies": [],
+      "files": [
+        {
+          "path": "hooks/api-client.ts",
+          "type": "registry:hook"
+        },
+        {
+          "path": "providers/query-provider.tsx",
+          "type": "registry:component"
+        }
+      ],
+      "categories": ["api", "hooks"]
+    },
+    {
       "name": "table-basic",
       "type": "registry:ui",
       "title": "Basic Table Components",
