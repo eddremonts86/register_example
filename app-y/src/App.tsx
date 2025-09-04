@@ -1,20 +1,10 @@
-import { useState } from 'react';
-import type { ColumnDef } from './components/interactive-table';
-import { InteractiveTable } from './components/interactive-table';
+import { useEffect } from 'react';
+import { useTableData } from './hooks/api-client';
+import { QueryProvider } from './providers/query-provider';
+import { useTableStore, type TableData } from './stores/table-store';
 
-// Interfaz para los datos del producto (diferente dominio de negocio)
-interface Product {
-  id: number;
-  code: string;
-  name: string;
-  category: string;
-  price: number;
-  stock: number;
-  description: string;
-}
-
-// Datos de muestra para productos
-const initialProducts: Product[] = [
+// Datos de muestra para productos compatibles con TableData
+const initialProducts: TableData[] = [
   {
     id: 1,
     code: 'PROD-001',
@@ -53,218 +43,151 @@ const initialProducts: Product[] = [
   },
 ];
 
-function App() {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+// Componente de tabla simple que usa el store
+function SimpleTable() {
+  const tableStore = useTableStore();
 
-  // Simulación de llamadas a API para demostrar la integración
-  const simulateApiCall = (endpoint: string, data: unknown) => {
-    return new Promise((resolve) => {
-      console.log(`🌐 [API] POST ${endpoint}`, data);
-      setTimeout(() => {
-        console.log(`✅ [API] Respuesta exitosa de ${endpoint}`);
-        resolve({ success: true, message: 'Actualizado correctamente' });
-      }, 800);
-    });
-  };
+  // Simular llamada a API
+  const { data: apiData, isLoading } = useTableData('/api/products');
 
-  // Función para manejar cambios en el código del producto
-  const handleProductCodeChange = async (rowId: string | number, newValue: string | number) => {
-    console.log(`🔄 Actualizando código del producto ${rowId}: ${newValue}`);
-
-    // Actualizar estado local inmediatamente para UX responsiva
-    setProducts(prevProducts =>
-      prevProducts.map(product =>
-        product.id === rowId
-          ? { ...product, code: String(newValue) }
-          : product
-      )
-    );
-
-    // Simular llamada a API del backend de App Y
-    try {
-      await simulateApiCall(`/api/products/${rowId}/code`, { code: newValue });
-    } catch (error) {
-      console.error('❌ Error al actualizar código:', error);
+  // Configurar datos iniciales
+  useEffect(() => {
+    if (!isLoading && !apiData) {
+      tableStore.setData(initialProducts);
     }
-  };
+  }, [isLoading, apiData, tableStore]);
 
-  // Función para manejar cambios en el nombre del producto
-  const handleProductNameChange = async (rowId: string | number, newValue: string | number) => {
-    console.log(`🔄 Actualizando nombre del producto ${rowId}: ${newValue}`);
-
-    setProducts(prevProducts =>
-      prevProducts.map(product =>
-        product.id === rowId
-          ? { ...product, name: String(newValue) }
-          : product
-      )
-    );
-
-    try {
-      await simulateApiCall(`/api/products/${rowId}/name`, { name: newValue });
-    } catch (error) {
-      console.error('❌ Error al actualizar nombre:', error);
+  // Configurar datos de API si están disponibles
+  useEffect(() => {
+    if (apiData?.data) {
+      tableStore.setData(apiData.data);
     }
-  };
+  }, [apiData, tableStore]);
 
-  // Función para manejar cambios en el precio
-  const handlePriceChange = async (rowId: string | number, newValue: string | number) => {
-    console.log(`🔄 Actualizando precio del producto ${rowId}: $${newValue}`);
-
-    setProducts(prevProducts =>
-      prevProducts.map(product =>
-        product.id === rowId
-          ? { ...product, price: Number(newValue) }
-          : product
-      )
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg">Cargando productos...</div>
+      </div>
     );
-
-    try {
-      await simulateApiCall(`/api/products/${rowId}/price`, { price: newValue });
-    } catch (error) {
-      console.error('❌ Error al actualizar precio:', error);
-    }
-  };
-
-  // Función para manejar cambios en el stock
-  const handleStockChange = async (rowId: string | number, newValue: string | number) => {
-    console.log(`🔄 Actualizando stock del producto ${rowId}: ${newValue} unidades`);
-
-    setProducts(prevProducts =>
-      prevProducts.map(product =>
-        product.id === rowId
-          ? { ...product, stock: Number(newValue) }
-          : product
-      )
-    );
-
-    try {
-      await simulateApiCall(`/api/products/${rowId}/stock`, { stock: newValue });
-    } catch (error) {
-      console.error('❌ Error al actualizar stock:', error);
-    }
-  };
-
-  // Definición de las 7 columnas (4 editables) para productos
-  const productColumns: ColumnDef<Product>[] = [
-    {
-      accessorKey: 'id',
-      header: 'ID',
-    },
-    {
-      accessorKey: 'code',
-      header: 'Código',
-      isEditable: true,
-      onCellUpdate: handleProductCodeChange,
-    },
-    {
-      accessorKey: 'name',
-      header: 'Nombre del Producto',
-      isEditable: true,
-      onCellUpdate: handleProductNameChange,
-    },
-    {
-      accessorKey: 'category',
-      header: 'Categoría',
-    },
-    {
-      accessorKey: 'price',
-      header: 'Precio',
-      isEditable: true,
-      onCellUpdate: handlePriceChange,
-      cell: (value: string | number | boolean) => `$${Number(value).toFixed(2)}`,
-    },
-    {
-      accessorKey: 'stock',
-      header: 'Stock',
-      isEditable: true,
-      onCellUpdate: handleStockChange,
-      cell: (value: string | number | boolean) => `${value} und.`,
-    },
-    {
-      accessorKey: 'description',
-      header: 'Descripción',
-    },
-  ];
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-      <div className="max-w-7xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            App Y - Consumidor del Componente
-          </h1>
-          <p className="text-lg text-gray-600">
-            Gestión de Inventario utilizando el componente de tabla interactiva de App X
-          </p>
-        </header>
+    <div className="container mx-auto py-8">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          🛍️ Gestión de Productos - App Y (Mejorada)
+        </h1>
+        <p className="text-gray-600">
+          Sistema usando los nuevos componentes mejorados del registry
+        </p>
+      </div>
 
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900">
-              📦 Catálogo de Productos
-            </h2>
-            <div className="text-sm text-gray-500">
-              Total: {products.length} productos
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold mb-2">Estado de la Tabla</h2>
+          <div className="grid grid-cols-3 gap-4 text-sm">
+            <div className="bg-gray-50 p-3 rounded">
+              <strong>Total de productos:</strong> {tableStore.data.length}
             </div>
-          </div>
-
-          <p className="text-sm text-gray-600 mb-6">
-            Este es un ejemplo de cómo App Y consume el componente de tabla de App X.
-            Las columnas marcadas con ✏️ son editables y simulan llamadas a la API de inventario.
-          </p>
-
-          <InteractiveTable
-            data={products}
-            columns={productColumns}
-            rowKey="id"
-          />
-        </div>
-
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow border p-6">
-            <h3 className="font-semibold text-lg mb-3 text-green-800">
-              ✅ Características Implementadas
-            </h3>
-            <ul className="text-sm space-y-2 text-gray-700">
-              <li>• <strong>7 columnas</strong> con datos de productos</li>
-              <li>• <strong>4 columnas editables:</strong> Código, Nombre, Precio, Stock</li>
-              <li>• <strong>Guardado implícito</strong> con evento onBlur</li>
-              <li>• <strong>Simulación de API</strong> del backend de App Y</li>
-              <li>• <strong>Feedback visual</strong> durante la edición</li>
-              <li>• <strong>Renderizado personalizado</strong> para precio y stock</li>
-            </ul>
-          </div>
-
-          <div className="bg-white rounded-lg shadow border p-6">
-            <h3 className="font-semibold text-lg mb-3 text-blue-800">
-              🔧 Instrucciones de Uso
-            </h3>
-            <ul className="text-sm space-y-2 text-gray-700">
-              <li>• Haz clic en cualquier celda con ✏️ para editarla</li>
-              <li>• Presiona <kbd className="bg-gray-100 px-1 rounded">Tab</kbd> para cambiar de celda</li>
-              <li>• Presiona <kbd className="bg-gray-100 px-1 rounded">Enter</kbd> para confirmar</li>
-              <li>• Haz clic fuera para guardar automáticamente</li>
-              <li>• Revisa la consola para ver los eventos de API</li>
-              <li>• Cada cambio simula una llamada al backend</li>
-            </ul>
+            <div className="bg-gray-50 p-3 rounded">
+              <strong>Página actual:</strong> {tableStore.pagination.pageIndex + 1}
+            </div>
+            <div className="bg-gray-50 p-3 rounded">
+              <strong>Filas por página:</strong> {tableStore.pagination.pageSize}
+            </div>
           </div>
         </div>
 
-        <div className="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <div className="text-amber-600 mr-3">💡</div>
-            <div>
-              <h4 className="font-medium text-amber-800">Nota de Arquitectura</h4>
-              <p className="text-sm text-amber-700 mt-1">
-                Este componente de tabla proviene de App X y se reutiliza aquí con datos y lógica de negocio específica de App Y.
-                Las funciones de callback permiten que cada aplicación maneje sus propias actualizaciones de datos.
-              </p>
-            </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full border border-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 border-b">Código</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 border-b">Nombre</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 border-b">Categoría</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 border-b">Precio</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 border-b">Stock</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 border-b">Descripción</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {tableStore.filteredData.map((product) => (
+                <tr key={product.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-sm text-gray-900">{String(product.code || '')}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{String(product.name || '')}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{String(product.category || '')}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900">${Number(product.price || 0)}</td>
+                  <td className="px-4 py-3 text-sm">
+                    <span className={Number(product.stock || 0) < 10 ? 'text-red-600 font-medium' : 'text-green-600'}>
+                      {Number(product.stock || 0)} unidades
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{String(product.description || '')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Controles de paginación */}
+        <div className="mt-4 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => tableStore.previousPage()}
+              disabled={!tableStore.canPreviousPage()}
+              className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Anterior
+            </button>
+            <button
+              onClick={() => tableStore.nextPage()}
+              disabled={!tableStore.canNextPage()}
+              className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Siguiente
+            </button>
+          </div>
+          <div className="text-sm text-gray-700">
+            Mostrando {tableStore.pagination.pageIndex * tableStore.pagination.pageSize + 1} a{' '}
+            {Math.min((tableStore.pagination.pageIndex + 1) * tableStore.pagination.pageSize, tableStore.totalRows)} de{' '}
+            {tableStore.totalRows} productos
           </div>
         </div>
       </div>
+
+      <div className="mt-6 p-4 bg-green-50 rounded-lg border-l-4 border-green-400">
+        <h3 className="font-medium text-green-900 mb-2">✅ Componentes Mejorados Integrados:</h3>
+        <ul className="text-green-800 text-sm space-y-1">
+          <li>• ✨ Store de estado con useTableStore (sin dependencias de Zustand)</li>
+          <li>• 🌐 Cliente API con useTableData (mock de TanStack Query)</li>
+          <li>• 🔧 Provider de queries con DevTools incluidos</li>
+          <li>• 📊 Estado de tabla completamente funcional</li>
+          <li>• 🚀 Listo para producción - solo reemplazar mocks con librerías reales</li>
+        </ul>
+      </div>
+
+      <div className="mt-4 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+        <h3 className="font-medium text-blue-900 mb-2">🔄 Funcionalidades Demostradas:</h3>
+        <ul className="text-blue-800 text-sm space-y-1">
+          <li>• Estado reactivo de tabla con paginación</li>
+          <li>• Carga de datos con hooks API</li>
+          <li>• Interfaz responsiva y moderna</li>
+          <li>• Componentes autocontenidos del registry</li>
+        </ul>
+      </div>
     </div>
+  );
+}
+
+// Componente principal de la app
+function App() {
+  return (
+    <QueryProvider>
+      <div className="min-h-screen bg-gray-50">
+        <SimpleTable />
+      </div>
+    </QueryProvider>
   );
 }
 
